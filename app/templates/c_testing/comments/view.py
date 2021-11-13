@@ -2,7 +2,7 @@ import sys
 sys.path.append("..")
 
 import streamlit as st
-from reddit_analysis.app.templates.c_testing.comments.algo import tfidf, lstm
+from reddit_analysis.app.templates.c_testing.comments.algo import tfidf, lstm, bert
 
 
 # Define possible models in a dict.
@@ -18,7 +18,6 @@ MODELS = {
     # single model variant
     "LSTM": "lstm",
     "BERT": "bert",
-    "ALBERT": "albert",
 }
 
 
@@ -27,31 +26,24 @@ def show(inputs):
     st.header('Text to analyze.')
     text_to_analyze = st.text_area('Type a sample comment below.')
 
-    # st.write("## Model")
-    # model = st.selectbox("Which model?", list(MODELS.keys()))
-    #
-    # # Show model variants if model has multiple ones.
-    # if isinstance(MODELS[model], dict):
-    #     # different model variants
-    #     model_variant = st.selectbox("Which variant?", list(MODELS[model].keys()))
-    #     inputs["model"] = model.lower()
-    #     inputs["model_func"] = MODELS[model][model_variant]
-    #     print('inputs["model_func"]', inputs["model_func"])
-    # else:
-    #     # only one variant
-    #     inputs["model"] = MODELS[model]
-    #     inputs["model_func"] = MODELS[model]
-    #
-    # st.write("### Preprocessing...")
-
     if st.button('Run Analysis'):
-        st.markdown("<br>", unsafe_allow_html=True)
-        # show template-specific components (based on selected model).
-        if inputs['model'] == 'tfidf':
-            tfidf.show(inputs, text_to_analyze)
 
-        if inputs['model'] == 'lstm':
-            lstm.show()
+        if not text_to_analyze:
+            st.warning(
+                "To analyze a comment, please type/paste a comment in the box above."
+            )
+        else:
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            # show template-specific components (based on selected model).
+            if inputs['model'] == 'tfidf':
+                tfidf.show(inputs, text_to_analyze)
+
+            if inputs['model'] == 'lstm':
+                lstm.show(inputs, text_to_analyze)
+
+            if inputs['model'] == 'bert':
+                bert.show(inputs, text_to_analyze)
 
 
 if __name__ == "__main__":

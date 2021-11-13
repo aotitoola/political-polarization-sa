@@ -5,7 +5,6 @@ from reddit_analysis.app.util.utils import round_down
 from reddit_analysis.app.util.tokenizer import tokenize_text
 
 # Import Common modules
-from tqdm import tqdm
 
 import pickle
 import os
@@ -79,7 +78,7 @@ def get_data():
 def rebalance_data(train_df):
 
     # count each word in instance
-    word_cnt = [len(tokenize_text(x, 3)) for x in tqdm(train_df['body'])]
+    word_cnt = [len(tokenize_text(x, 3)) for x in stqdm(train_df['body'])]
 
     # Use tweets having 5 or more words. Do not resample for balancing data here.
     train_dict = {'body': train_df['body'], 'label': train_df['label'], 'count': word_cnt}
@@ -102,14 +101,14 @@ def rebalance_data(train_df):
     left_label_df = left_label_df.iloc[:min_data_length]
     right_label_df = right_label_df.iloc[:min_data_length]
 
-    logger.info("The total number of left data: {}".format(len(left_label_df)))
-    logger.info("The total number of right data: {}".format(len(right_label_df)))
-
     # re-concatenate
     train_df = pd.concat([left_label_df, right_label_df], ignore_index=True, sort=False)
 
     # re-shuffle
     train_df.sample(frac=1).reset_index(drop=True, inplace=True)
+
+    logger.info("The total number of left data: {}".format(len(left_label_df)))
+    logger.info("The total number of right data: {}".format(len(right_label_df)))
     logger.info("The total number of input data: {}".format(len(train_df)))
 
     return train_df

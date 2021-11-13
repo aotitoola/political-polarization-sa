@@ -1,6 +1,8 @@
 import os
 import streamlit as st
 import joblib
+import torch
+import json
 
 import base64
 import uuid
@@ -178,16 +180,94 @@ def save_model(algo, model, filename):
     print('model saved successfully.')
 
 
-def load_model(algo, filename):
-    output_file = f'{filename}.pkl'
+def load_lstm_bert_pretrained_model(algo, filename):
     outdir = f'{os.getcwd()}/models/{algo}'
-    fullpath = os.path.join(outdir, output_file)
-    return joblib.load(fullpath)
+    fullpath = os.path.join(outdir, filename)
+
+    loaded_model = None
+    try:
+        loaded_model = joblib.load(fullpath)
+        print('model loaded successfully.')
+    except FileNotFoundError as fnf_error:
+        st.error("Model not found in directory.")
+        print(fnf_error)
+    return loaded_model
 
 
-def model_saved(algo, filename):
-    filepath = f'{os.getcwd()}/models/{algo}/{filename}.pkl'
+def save_lstm_bert_model(algo, model, best_sampling, hyper_params, vocab, acc, f1):
+
+    model_dir = f'{os.getcwd()}/models/{algo}/model'
+    params_dir = f'{os.getcwd()}/models/{algo}/params'
+    vocab_dir = f'{os.getcwd()}/models/{algo}/vocab'
+    metrics_dir = f'{os.getcwd()}/models/{algo}/metrics'
+
+    for dirr in [model_dir, params_dir, vocab_dir, metrics_dir]:
+        if not os.path.exists(dirr):
+            os.makedirs(dirr)
+
+    model_file = f'{algo}_model_s{best_sampling}_e{hyper_params["epochs"]}.dict'
+    model_path = os.path.join(model_dir, model_file)
+
+    params_file = f'{algo}_params_s{best_sampling}_e{hyper_params["epochs"]}.json'
+    params_path = os.path.join(params_dir, params_file)
+
+    metrics_file = f'{algo}_metrics_s{best_sampling}_e{hyper_params["epochs"]}.pth'
+    metrics_path = os.path.join(metrics_dir, metrics_file)
+
+    try:
+        # save model
+        torch.save(model.state_dict(), model_path)
+
+        # save hyperparams
+        with open(params_path, 'w+') as f:
+            json.dump(hyper_params, f, indent=4)
+
+        # save metrics
+        metrics_data = {
+            "acc": acc,
+            "f1": f1
+        }
+        torch.save(metrics_data, metrics_path)
+
+        if algo == 'lstm':
+            # save vocab
+            vocab_file = f'{algo}_vocab_s{best_sampling}_e{hyper_params["epochs"]}.pth'
+            vocab_path = os.path.join(vocab_dir, vocab_file)
+            torch.save(vocab, vocab_path)
+
+        print('model saved successfully.')
+    except FileNotFoundError as fnf_error:
+        print(fnf_error)
+
+
+def lstm_bert_model_exists(algo, filename):
+    filepath = f'{os.getcwd()}/models/{algo}/model/{filename}'
     if os.path.exists(filepath):
         return True
     return False
 
+
+def load_lstm_bert_model(algo, model, filename):
+    output_file = f'{filename}.pkl'
+    outdir = f'{os.getcwd()}/models/{algo}/model'
+
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+
+    fullpath = os.path.join(outdir, output_file)
+    joblib.dump(model, fullpath)
+    print('model saved successfully.')
+
+
+def load_tfidf_model(algo, filename):
+    # output_file = f'{filename}.pkl'
+    outdir = f'{os.getcwd()}/models/{algo}/model'
+    fullpath = os.path.join(outdir, filename)
+    return joblib.load(fullpath)
+
+
+def tfidf_model_exists(algo, filename):
+    filepath = f'{os.getcwd()}/models/{algo}/model/{filename}'
+    if os.path.exists(filepath):
+        return True
+    return False

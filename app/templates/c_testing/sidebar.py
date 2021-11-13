@@ -1,5 +1,8 @@
+import os
 import sys
 sys.path.append("..")
+from os import listdir
+from os.path import isfile, join
 
 import streamlit as st
 from reddit_analysis.app.util.utils import capitalize
@@ -16,19 +19,7 @@ MODELS = {
     },
     # single model variant
     "LSTM": "lstm",
-    "BERT": "bert",
-    "ALBERT": "albert",
-}
-
-# Define possible optimizers in a dict.
-# Format: optimizer -> default learning rate
-OPTIMIZERS = {
-    "Adam": 0.001,
-    "Adadelta": 1.0,
-    "Adagrad": 0.01,
-    "Adamax": 0.002,
-    "RMSprop": 0.01,
-    "SGD": 0.1,
+    "BERT": "bert"
 }
 
 
@@ -56,6 +47,12 @@ def show():
             # only one variant
             inputs["model"] = MODELS[model]
             inputs["model_func"] = MODELS[model]
+
+        model_path = f'{os.getcwd()}/models/{inputs["model"]}/model'
+        model_files = [f for f in listdir(model_path) if isfile(join(model_path, f))]
+        model_files = [f for f in model_files if f.startswith(inputs["model_func"])]
+
+        inputs["pretrained_model_file"] = st.selectbox("Select Pretrained Model", model_files)
 
     return inputs
 

@@ -17,7 +17,7 @@ sns.set()
 plt.style.use('ggplot')
 
 
-def show():
+def show(inputs):
 
     # LOAD INPUT DATA
     data_load_state = st.info('Loading data...')
@@ -51,13 +51,23 @@ def show():
     st.markdown("<br>", unsafe_allow_html=True)
     st.pyplot(fig)
 
+    tokenizer_props = inputs['tokenizer_props']
+
     with st.spinner(text='Tokenization in progress...'):
         tokenized, tokenized_text, bow, vocab, id2vocab, token_ids = tokenize_df(train_df, col='body',
-                                                                                 lemma=True, use_stopwords=True,
-                                                                                 tokenizer='NLTK', show_graph=True)
+                                                                                 lemma=tokenizer_props['lemma'], use_stopwords=tokenizer_props['use_stopwords'],
+                                                                                 tokenizer=tokenizer_props['tokenizer'], show_graph=tokenizer_props['show_graph'])
 
     # reset index
     train_df.reset_index(drop=True, inplace=True)
+
+    # if tokenizer_props['model'] in ['lstm', 'bert']:
+    #     # X and Y data used
+    #
+    #     # not using this for LSTM, BERT at the moment
+    #     X_data = token_ids
+    #     Y_data = train_df['label']
+    # else:
 
     # X and Y data used
     X_data = tokenized_text
@@ -67,5 +77,18 @@ def show():
     X_train, X_test, Y_train, Y_test = \
         model_selection.train_test_split(X_data, Y_data.values, test_size=0.2, shuffle=True)
 
+    split_dataset = X_train, X_test, Y_train, Y_test, train_df, vocab
+
+    current_dataset = st.session_state["current_dataset"]
+
+    if tokenizer_props['model'] in ['lstm', 'bert']:
+        current_dataset['bert'] = split_dataset
+        current_dataset['lstm'] = split_dataset
+    else:
+        current_dataset[tokenizer_props['model']] = split_dataset
+
+    st.session_state.update({
+        "current_dataset": current_dataset
+    })
+
     st.markdown("<br>", unsafe_allow_html=True)
-    return X_train, X_test, Y_train, Y_test

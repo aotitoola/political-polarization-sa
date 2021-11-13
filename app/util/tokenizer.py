@@ -6,12 +6,8 @@ import re
 import streamlit as st
 
 from wordcloud import WordCloud, STOPWORDS
-from tqdm import tqdm
 from stqdm import stqdm
-
-# from tqdm.notebook import tqdm
-# tqdm.pandas()
-# stqdm.pandas()
+stqdm.pandas()
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -20,6 +16,7 @@ import seaborn as sns
 sns.set(style='white', context='notebook', palette='deep')
 
 import nltk
+
 nltk.download('punkt')
 nltk.download('wordnet')
 nltk.download('stopwords')
@@ -63,7 +60,7 @@ def tokenize_text(text, option):
         logger.warn("Please specify option value between 1 and 4")
 
 
-@st.cache(persist=True, show_spinner=False, suppress_st_warning=True, max_entries=5, ttl=86400)
+# @st.cache(persist=True, show_spinner=False, suppress_st_warning=True, max_entries=5, ttl=86400)
 def tokenize_df(df, col='body', lemma=True, use_stopwords=True, tokenizer='NLTK', show_graph=False):
     """
     Extract words which are only aphabet and not in stop word, covert to lower case.
@@ -74,11 +71,12 @@ def tokenize_df(df, col='body', lemma=True, use_stopwords=True, tokenizer='NLTK'
         4: (alphabet + "'s" + "'t")
 
     """
+
     tokenized = []
     stop = set(stopwords.words('english'))
     for text in stqdm(df[col]):
-        # Filter alphabet words only , make it lower case
-        if tokenizer == 'NLTK':
+        # Filter alphabet words only , make it loser case
+        if tokenizer in ['NLTK', 'Own']:
             words = [word.lower() for word in word_tokenize(text) if (word.isalpha() == 1)]
         else:
             words = re.findall(r'\b([a-zA-Z]+n\'t|[a-zA-Z]+\'s|[a-zA-Z]+)\b', text.lower())
@@ -132,7 +130,11 @@ def tokenize_df(df, col='body', lemma=True, use_stopwords=True, tokenizer='NLTK'
         st.pyplot(plt)
 
         # Show most frequent words in a bar graph
-        most = counts.most_common()[:40]
+        if tokenizer == 'Own':
+            most = counts.most_common()[:100]
+        else:
+            most = counts.most_common()[:40]
+
         x, y = [], []
         for word, count in most:
             if word not in stpwrds:
@@ -150,10 +152,10 @@ def tokenize_df(df, col='body', lemma=True, use_stopwords=True, tokenizer='NLTK'
     return tokenized, tokenized_text, bow, vocab, id2vocab, token_ids
 
 
-# Create vocab
+# create vocab
 def create_vocab(messages):
     corpus = []
-    for message in tqdm(messages, desc="Tokenizing"):
+    for message in stqdm(messages, desc="Tokenizing"):
         # Use option 3
         tokens = tokenize_text(message, 3)
         corpus.extend(tokens)
@@ -172,3 +174,49 @@ def create_vocab(messages):
     id2vocab = {v: k for k, v in vocab.items()}
 
     return vocab, id2vocab
+
+
+def create_vocab_lstm_bert(messages, show_graph=False):
+    corpus = []
+    for message in stqdm(messages, desc="Tokenizing"):
+        tokens = tokenize_text(message, 3) # Use option 3
+        corpus.extend(tokens)
+    logger.info("The number of all words: {}".format(len(corpus)))
+
+    # Create Counter
+    counts = Counter(corpus)
+    logger.info("The number of unique words: {}".format(len(counts)))
+
+    # Create BoW
+    bow = sorted(counts, key=counts.get, reverse=True)
+    logger.info("Top 40 frequent words: {}".format(bow[:40]))
+
+    # Indexing vocabrary, starting from 1.
+    vocab = {word: ii for ii, word in enumerate(counts, 1)}
+    id2vocab = {v: k for k, v in vocab.items()}
+
+    if show_graph:
+        from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
+        # Generate Word Cloud image
+        text = " ".join(corpus)
+        stopwords = set(STOPWORDS)
+
+        wordcloud = WordCloud(stopwords=stopwords, max_font_size=50, max_words=200, background_color="white", collocations=False).generate(text)
+        plt.figure(figsize=(15, 7))
+        plt.imshow(wordcloud, interpolation="bilinear")
+        plt.axis("off")
+        plt.show()
+
+        # Show most frequent words in a bar graph
+        most = counts.most_common()[:100]
+        x, y = [], []
+        for word, count in most:
+            if word not in stopwords:
+                x.append(word)
+                y.append(count)
+
+        plt.figure(figsize=(15,7))
+        sns.barplot(x=y, y=x)
+        plt.show()
+
+    return vocab
