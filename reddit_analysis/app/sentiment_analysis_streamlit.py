@@ -4,17 +4,18 @@ sys.path.append("..")
 
 from util import utils
 from streamlit import legacy_caching
-from reddit_analysis.app.util.utils import model_saved
+from reddit_analysis.app.util.utils import tfidf_model_exists
 
 import os
 import collections
+from collections import defaultdict
 
 import streamlit as st
 
 # store dataset in state so you can pass across pages
 if "current_dataset" not in st.session_state:
     st.session_state.update({
-        "current_dataset": None,
+        "current_dataset": {}
     })
 
 
@@ -44,14 +45,18 @@ st.image(UOL_ICON_URL, width=300)
 The goal of this project is to compare the performance of LSTM and pre-trained BERT.
 Here, I have about 50,000 labeled comments from political subreddits. The performance is measured in terms of accuracy and f1 score, spending a small and the same amount of time for hyperparameter tuning.
 
-My expectation is:
-
-* Normal LSTM can perform well on tweet type of text, as it usually does not have long complex sentence structures.
-* LSTM will overfit when the training samples are not enough but it can be trained when more inputs are avaiable
-* Pre-trained BERT has been trained Wikipedia+Book Corpus, which is quite different from tweet, thus not performing well while transfer learning is still valid
 
 ---
 """
+
+
+# My expectation is:
+#
+# * Normal LSTM can perform well on tweet type of text, as it usually does not have long complex sentence structures.
+# * LSTM will overfit when the training samples are not enough but it can be trained when more inputs are avaiable
+# * Pre-trained BERT has been trained Wikipedia+Book Corpus, which is quite different from tweet, thus not performing well while transfer learning is still valid
+
+
 template_dict = collections.defaultdict(dict)
 template_dirs = [
     f for f in os.scandir("app/templates") if f.is_dir() and f.name != "example"
@@ -105,10 +110,7 @@ if inputs['task'] == 'preprocessing':
             "init_template", os.path.join(template_dir, "init.py")
         )
 
-        split_dataset = init.show()
-        st.session_state.update({
-            "current_dataset": split_dataset,
-        })
+        init.show(inputs)
 
         st.success("Visualization Complete.")
         st.balloons()
@@ -118,35 +120,43 @@ if not st.session_state["current_dataset"]:
     st.warning(
         "Please perform data processing before proceeding to training."
         if inputs['task'] == 'training' else
-        "Please perform data processing and training before proceeding to testing."
+        "Please perform data processing before proceeding to training/testing."
     )
 else:
 
     # TRAINING
     if inputs['task'] == 'training':
-        if st.button('Run Algorithm' if inputs["pretrained"] else 'Train Algorithm'):
-            st.markdown("<br>", unsafe_allow_html=True)
 
-            # Show template-specific components (based on model in the template dir).
-            current_template = utils.import_from_file(
-                "current_template", os.path.join(template_dir, f"{inputs['model']}.py")
+        if inputs["model"] not in st.session_state["current_dataset"]:
+            st.warning(
+                f"Please perform data processing for {inputs['model'].upper()} before proceeding."
             )
+        else:
 
-            current_template.show(inputs)
+            if st.button('Run Algorithm' if inputs['model'] == 'tfidf' and inputs["pretrained"] else 'Train Algorithm'):
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                # Show template-specific components (based on model in the template dir).
+                current_template = utils.import_from_file(
+                    "current_template", os.path.join(template_dir + '/algo', f"{inputs['model']}.py")
+                )
+
+                current_template.show(inputs)
 
     # TESTING
     if inputs['task'] == 'testing':
 
         # check if there is a saved pretrained model for selection
-        model_exists = model_saved(inputs["model"], inputs["model_func"])
+        # model_exists = tfidf_model_exists(inputs["model"], inputs["model_func"])
+        #
+        # if not model_exists:
+        #     st.warning(
+        #         f"Please train a {inputs['model_func'].replace('_', ' ').title()} model before proceeding"
+        #     )
+        # else:
 
-        if not model_exists:
-            st.warning(
-                f"Please train a {inputs['model_func'].replace('_', ' ').title()} model before proceeding"
-            )
-        else:
-            test_view_directory = template_dir + f"/{inputs['testing_mode']}"
-            test_view_directory = utils.import_from_file(
-                "test_view_directory", os.path.join(test_view_directory, "view.py")
-            )
-            test_view_directory.show(inputs)
+        test_view_directory = template_dir + f"/{inputs['testing_mode']}"
+        test_view_directory = utils.import_from_file(
+            "test_view_directory", os.path.join(test_view_directory, "view.py")
+        )
+        test_view_directory.show(inputs)

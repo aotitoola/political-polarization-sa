@@ -1,9 +1,9 @@
 import sys
-sys.path.append("..")
+sys.path.append("../..")
 
 from reddit_analysis.app.util.metrics import metric
 from reddit_analysis.app.util.sa_logger import logger
-from reddit_analysis.app.util.utils import save_model, load_model
+from reddit_analysis.app.util.utils import save_model, load_tfidf_model
 
 import streamlit as st
 
@@ -23,10 +23,10 @@ plt.style.use('ggplot')
 
 def show(inputs):
 
-    dataset = st.session_state["current_dataset"]
+    dataset = st.session_state["current_dataset"]["tfidf"]
 
     # Train test split (Shuffle=False will make the test data for the most recent ones)
-    X_train, X_test, Y_train, Y_test = dataset
+    X_train, X_test, Y_train, Y_test, _, _ = dataset
 
     if not inputs["pretrained"]:
         pipeline = None
@@ -76,7 +76,7 @@ def show(inputs):
 
         fetched_model = None
         try:
-            fetched_model = load_model('tfidf', inputs['model_func'])
+            fetched_model = load_tfidf_model('tfidf', inputs["pretrained_model_file"])
         except FileNotFoundError as fnf_error:
             print(fnf_error)
 

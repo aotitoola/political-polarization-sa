@@ -1,4 +1,4 @@
-from sklearn.metrics import accuracy_score, f1_score, plot_confusion_matrix
+from sklearn.metrics import accuracy_score, f1_score
 
 
 # Define metrics

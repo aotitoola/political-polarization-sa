@@ -2,6 +2,7 @@ import sys
 sys.path.append("..")
 
 import streamlit as st
+from reddit_analysis.app.templates.c_testing.subreddits.algo import tfidf, lstm, bert
 
 
 # Define possible models in a dict.
@@ -17,55 +18,31 @@ MODELS = {
     # single model variant
     "LSTM": "lstm",
     "BERT": "bert",
-    "ALBERT": "albert",
 }
 
 
 def show(inputs):
 
-    st.header('Type a sample comment in text box.')
-    comments = st.text_input('Movie title', 'Life of Brian')
+    st.header('Subreddit to analyze.')
+    subreddit_of_interest = st.text_input('Subreddit of Interest', value='politics', help='Kindly enter a valid subreddit name without "/r/"')
 
-    st.write("## Model")
-    model = st.selectbox("Which model?", list(MODELS.keys()))
+    if st.button('Run Analysis'):
 
-    # Show model variants if model has multiple ones.
-    if isinstance(MODELS[model], dict):
-        # different model variants
-        model_variant = st.selectbox("Which variant?", list(MODELS[model].keys()))
-        inputs["model"] = model.lower()
-        inputs["model_func"] = MODELS[model][model_variant]
-        print('inputs["model_func"]', inputs["model_func"])
-    else:
-        # only one variant
-        inputs["model"] = MODELS[model]
-        inputs["model_func"] = MODELS[model]
+        if not subreddit_of_interest:
+            st.warning(
+                "To analyze a subreddit, please type/paste a subreddit name in the text box above."
+            )
+        else:
+            st.markdown("<br>", unsafe_allow_html=True)
+            # show template-specific components (based on selected model).
+            if inputs['model'] == 'tfidf':
+                tfidf.show(inputs, subreddit_of_interest)
 
-    inputs["pretrained"] = st.checkbox("Use pre-trained model")
+            if inputs['model'] == 'lstm':
+                lstm.show(inputs, subreddit_of_interest)
 
-    if inputs["pretrained"]:
-        pass
-
-    st.write("## Preprocessing")
-
-    st.write("## Testing")
-
-    inputs["checkpoint"] = st.checkbox("Save model checkpoint each epoch")
-    if inputs["checkpoint"]:
-        st.markdown(
-            "<sup>Checkpoints are saved to timestamped dir in `./checkpoints`. They may consume a lot of storage!</sup>",
-            unsafe_allow_html=True,
-        )
-
-    default_lr = 3e-4
-    inputs["lr"] = st.number_input(
-        "Learning rate", 0.000, None, default_lr, format="%f"
-    )
-    inputs["batch_size"] = st.number_input("Batch size", 1, None, 128)
-    inputs["num_epochs"] = st.number_input("Epochs", 1, None, 3)
-    inputs["print_every"] = st.number_input(
-        "Print progress every ... batches", 1, None, 1
-    )
+            if inputs['model'] == 'bert':
+                bert.show(inputs, subreddit_of_interest)
 
 
 if __name__ == "__main__":
