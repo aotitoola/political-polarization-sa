@@ -262,3 +262,6 @@ pip-selfcheck.json
 # exclude data
 reddit_analysis/data/
 reddit_analysis/trash/
+reddit_analysis/models/
+
+requirements.py
