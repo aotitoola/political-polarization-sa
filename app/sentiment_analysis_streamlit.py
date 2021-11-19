@@ -133,7 +133,7 @@ else:
             )
         else:
 
-            if st.button('Run Algorithm' if inputs['model'] == 'tfidf' and inputs["pretrained"] else 'Train Algorithm'):
+            if st.button('View Metrics' if inputs["pretrained"] else 'Train Algorithm'):
 
                 st.markdown("<br>", unsafe_allow_html=True)
                 # Show template-specific components (based on model in the template dir).

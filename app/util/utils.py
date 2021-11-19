@@ -168,18 +168,6 @@ def round_down(num, divisor):
     return num - (num % divisor)
 
 
-def save_model(algo, model, filename):
-    output_file = f'{filename}.pkl'
-    outdir = f'{os.getcwd()}/models/{algo}'
-
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
-
-    fullpath = os.path.join(outdir, output_file)
-    joblib.dump(model, fullpath)
-    print('model saved successfully.')
-
-
 def load_lstm_bert_pretrained_model(algo, filename):
     outdir = f'{os.getcwd()}/models/{algo}'
     fullpath = os.path.join(outdir, filename)
@@ -192,6 +180,29 @@ def load_lstm_bert_pretrained_model(algo, filename):
         st.error("Model not found in directory.")
         print(fnf_error)
     return loaded_model
+
+
+def save_tfidf_model(algo, model, filename, solver, metrics, datalength):
+
+    model_dir = f'{os.getcwd()}/models/{algo}/model'
+    metrics_dir = f'{os.getcwd()}/models/{algo}/metrics'
+
+    for dirr in [model_dir, metrics_dir]:
+        if not os.path.exists(dirr):
+            os.makedirs(dirr)
+
+    model_file = f'{filename}_{solver}_{datalength}.pkl'
+    model_path = os.path.join(model_dir, model_file)
+    joblib.dump(model, model_path)
+
+    metrics_file = f'{filename}_{solver}_{datalength}.json'
+    metrics_path = os.path.join(metrics_dir, metrics_file)
+
+    # save metrics
+    with open(metrics_path, 'w+') as f:
+        json.dump(metrics, f, indent=4)
+
+    print('model saved successfully.')
 
 
 def save_lstm_bert_model(algo, model, best_sampling, hyper_params, vocab, acc, f1):
