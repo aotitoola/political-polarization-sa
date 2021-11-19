@@ -260,8 +260,8 @@ pip-selfcheck.json
 .DS_Store
 
 # exclude data
-reddit_analysis/data/
-reddit_analysis/trash/
-reddit_analysis/models/
+data/
+trash/
+models/
 
 requirements.py
